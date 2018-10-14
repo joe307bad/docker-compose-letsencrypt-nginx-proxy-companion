@@ -61,6 +61,8 @@ fi
 # Check if you have multiple network
 if [ -z ${SERVICE_NETWORK+X} ]; then
     docker-compose up -d
+elif [ -z ${WITH_AUTHELIA} ]; then
+    docker-compose -f docker-with-authelia.yml up -d
 else
     docker-compose -f docker-compose-multiple-networks.yml up -d
 fi
