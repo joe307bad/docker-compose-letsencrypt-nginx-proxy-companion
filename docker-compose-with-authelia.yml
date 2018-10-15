@@ -23,7 +23,7 @@ services:
 
   nginx-gen:
     image: jwilder/docker-gen
-    command: -notify-sighup ${AUTHELIA_NGINX_WEB} -watch -wait 5s:30s /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default1.conf
+    command: -notify-sighup ${AUTHELIA_NGINX_WEB} -watch -wait 5s:30s /etc/docker-gen/templates/nginx.tmpl /etc/nginx/conf.d/default1
     container_name: ${DOCKER_GEN:-nginx-gen}
     restart: always
     volumes:
