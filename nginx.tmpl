@@ -246,7 +246,7 @@ server {
     }
 {{ end }}
 
-{{if and (ne $host "auth.jbad.io") (ne $host "mysql.joe.local") ne $host ""}}
+{{if and (ne $host "auth.jbad.io") (ne $host "mysql.joe.local") (ne $host "")}}
 
 {{ range $container := $containers }}
 
