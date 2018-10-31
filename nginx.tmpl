@@ -246,10 +246,11 @@ server {
     }
 {{ end }}
 
-{{if and (ne $host "auth.jbad.io") (ne $host "mysql.joe.local")}}
+{{if and (ne $host "auth.jbad.io") (ne $host "mysql.joe.local") ne $host ""}}
 
 {{ range $container := $containers }}
 
+{{if eq $container.Env.BEHIND_AUTH "true"}}
 server {
 	server_name {{ $host }};
 	listen 443 ssl http2 {{ $default_server }};
@@ -349,6 +350,101 @@ server {
             proxy_pass $upstream_endpoint;
         }
 }
+{{else}}
+server {
+	server_name {{ $host }};
+	listen 443 ssl http2 {{ $default_server }};
+	{{ if $enable_ipv6 }}
+	listen [::]:443 ssl http2 {{ $default_server }};
+	{{ end }}
+	access_log /var/log/nginx/access.log vhost;
+
+	{{ if eq $network_tag "internal" }}
+	# Only allow traffic from internal clients
+	include /etc/nginx/network_internal.conf;
+	{{ end }}
+
+	{{ if eq $ssl_policy "Mozilla-Modern" }}
+	ssl_protocols TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256';
+	{{ else if eq $ssl_policy "Mozilla-Intermediate" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:!DSS';
+	{{ else if eq $ssl_policy "Mozilla-Old" }}
+	ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:ECDHE-RSA-DES-CBC3-SHA:ECDHE-ECDSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:DES-CBC3-SHA:HIGH:SEED:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!RSAPSK:!aDH:!aECDH:!EDH-DSS-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA:!SRP';
+	{{ else if eq $ssl_policy "AWS-TLS-1-2-2017-01" }}
+	ssl_protocols TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:AES128-GCM-SHA256:AES128-SHA256:AES256-GCM-SHA384:AES256-SHA256';
+	{{ else if eq $ssl_policy "AWS-TLS-1-1-2017-01" }}
+	ssl_protocols TLSv1.1 TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA';
+	{{ else if eq $ssl_policy "AWS-2016-08" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA';
+	{{ else if eq $ssl_policy "AWS-2015-05" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:DES-CBC3-SHA';
+	{{ else if eq $ssl_policy "AWS-2015-03" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:DHE-DSS-AES128-SHA:DES-CBC3-SHA';
+	{{ else if eq $ssl_policy "AWS-2015-02" }}
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+	ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:AES128-GCM-SHA256:AES128-SHA256:AES128-SHA:AES256-GCM-SHA384:AES256-SHA256:AES256-SHA:DHE-DSS-AES128-SHA';
+	{{ end }}
+
+	ssl_prefer_server_ciphers on;
+	ssl_session_timeout 5m;
+	ssl_session_cache shared:SSL:50m;
+	ssl_session_tickets off;
+
+	ssl_certificate /etc/nginx/certs/{{ (printf "%s.crt" $cert) }};
+	ssl_certificate_key /etc/nginx/certs/{{ (printf "%s.key" $cert) }};
+
+	{{ if (exists (printf "/etc/nginx/certs/%s.dhparam.pem" $cert)) }}
+	ssl_dhparam {{ printf "/etc/nginx/certs/%s.dhparam.pem" $cert }};
+	{{ end }}
+
+	{{ if (exists (printf "/etc/nginx/certs/%s.chain.pem" $cert)) }}
+	ssl_stapling on;
+	ssl_stapling_verify on;
+	ssl_trusted_certificate {{ printf "/etc/nginx/certs/%s.chain.pem" $cert }};
+	{{ end }}
+
+	{{ if (and (ne $https_method "noredirect") (ne $hsts "off")) }}
+	add_header Strict-Transport-Security "{{ trim $hsts }}" always;
+	{{ end }}
+
+	{{ if (exists (printf "/etc/nginx/vhost.d/%s" $host)) }}
+	include {{ printf "/etc/nginx/vhost.d/%s" $host }};
+	{{ else if (exists "/etc/nginx/vhost.d/default") }}
+	include /etc/nginx/vhost.d/default;
+	{{ end }}
+
+	location / {
+		{{ if eq $proto "uwsgi" }}
+		include uwsgi_params;
+		uwsgi_pass {{ trim $proto }}://{{ trim $upstream_name }};
+		{{ else if eq $proto "fastcgi" }}
+		root   {{ trim $vhost_root }};
+		include fastcgi.conf;
+		fastcgi_pass {{ trim $upstream_name }};
+		{{ else }}
+		proxy_pass {{ trim $proto }}://{{ trim $upstream_name }};
+		{{ end }}
+
+		{{ if (exists (printf "/etc/nginx/htpasswd/%s" $host)) }}
+		auth_basic	"Restricted {{ $host }}";
+		auth_basic_user_file	{{ (printf "/etc/nginx/htpasswd/%s" $host) }};
+		{{ end }}
+		{{ if (exists (printf "/etc/nginx/vhost.d/%s_location" $host)) }}
+		include {{ printf "/etc/nginx/vhost.d/%s_location" $host}};
+		{{ else if (exists "/etc/nginx/vhost.d/default_location") }}
+		include /etc/nginx/vhost.d/default_location;
+		{{ end }}
+	}
+}
+{{end}}
 
 {{ end }}
 
