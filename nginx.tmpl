@@ -351,6 +351,13 @@ server {
         }
 }
 {{else}}
+
+	{{ if (exists (printf "/etc/nginx/vhost.d/%s" $host)) }}
+	include {{ printf "/etc/nginx/vhost.d/%s" $host }};
+	{{ else if (exists "/etc/nginx/vhost.d/default") }}
+	include /etc/nginx/vhost.d/default;
+	{{ else }}
+
 server {
 	server_name {{ $host }};
 	listen 443 ssl http2 {{ $default_server }};
@@ -415,12 +422,6 @@ server {
 	add_header Strict-Transport-Security "{{ trim $hsts }}" always;
 	{{ end }}
 
-	{{ if (exists (printf "/etc/nginx/vhost.d/%s" $host)) }}
-	include {{ printf "/etc/nginx/vhost.d/%s" $host }};
-	{{ else if (exists "/etc/nginx/vhost.d/default") }}
-	include /etc/nginx/vhost.d/default;
-	{{ end }}
-
 	location / {
 		{{ if eq $proto "uwsgi" }}
 		include uwsgi_params;
@@ -444,6 +445,8 @@ server {
 		{{ end }}
 	}
 }
+
+{{ end }}
 {{end}}
 
 {{ end }}
